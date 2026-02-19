@@ -107,7 +107,11 @@ async def zitadel_login(request: ZitadelLoginRequest, db: Session = Depends(data
         # Reference: username=user_info.get('preferred_username', user_info['email'].split('@')[0])
         username_claim = user_info.get("preferred_username")
         if not username_claim:
-             username_claim = email.split("@")[0]
+             username_claim = email
+        
+        # If username is an email address (contains @), remove the domain part
+        if "@" in username_claim:
+             username_claim = username_claim.split("@")[0]
              
         # Check if user exists
         user = db.query(models.User).filter(models.User.email == email).first()

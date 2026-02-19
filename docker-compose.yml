@@ -10,8 +10,8 @@ services:
       - ./postgres_data:/var/lib/postgresql/data
     networks:
       - dash-network
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "8004:5432"
 
   backend:
     build:
@@ -38,6 +38,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 5s
+    ports:
+      - "8003:8000"
 
   frontend:
     build:
@@ -46,6 +48,8 @@ services:
     container_name: dash-frontend
     networks:
       - dash-network
+    ports:
+      - "8002:3000"
 
   nginx:
     image: nginx:alpine
