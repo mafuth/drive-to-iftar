@@ -77,3 +77,9 @@ The project includes a `docker-compose.yml` for instant deployment.
     ```
 
 The game will be available at `http://localhost:8001` (or your configured port).
+
+## 📝 Todo
+
+*   [ ] Fix watermelons spawning inside vehicles.
+*   [ ] Add sound effects and background music.
+*   [ ] Add web vitals analytics.

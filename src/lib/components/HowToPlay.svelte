@@ -30,7 +30,7 @@
         on:click|self={close}
     >
         <div
-            class="w-full max-w-lg bg-[#1a1a2e] border border-white/20 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative"
+            class="w-full max-w-lg max-h-[95vh] overflow-y-auto bg-[#1a1a2e] border border-white/20 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative"
             transition:scale={{ start: 0.95, duration: 200 }}
         >
             <button

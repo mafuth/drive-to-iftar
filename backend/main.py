@@ -6,19 +6,8 @@ from database import models
 from libs.logger import setup_logging, shutdown_logging
 from libs.settings import settings
 
-from alembic.config import Config
-from alembic import command
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Run database migrations
-    try:
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
-        print("Database migrations applied successfully.")
-    except Exception as e:
-        print(f"Error applying database migrations: {e}")
-
     setup_logging()
     yield
     shutdown_logging()
@@ -35,6 +24,10 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(game.router, prefix="/api")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 @app.get("/")
 async def root():
