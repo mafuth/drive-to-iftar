@@ -7,6 +7,7 @@
     import Player from "./Player.svelte";
     import ObstacleSpawner from "./ObstacleSpawner.svelte";
     import CollectibleSpawner from "./CollectibleSpawner.svelte";
+    import DateSpawner from "./DateSpawner.svelte";
 
     import RivalCar from "./RivalCar.svelte";
     import Sky from "./Sky.svelte";
@@ -63,6 +64,7 @@
 
 <ObstacleSpawner />
 <CollectibleSpawner />
+<DateSpawner />
 
 {#each [...$rivals.values()] as rivalData (rivalData.id)}
     <RivalCar data={rivalData} />

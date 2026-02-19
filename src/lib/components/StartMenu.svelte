@@ -120,8 +120,21 @@
 
                 // Let's rely on Race page to fetch config,
                 // BUT we need race_id for score submission.
-                // If we call startSinglePlayer HERE, we get a race_id.
+                // If we call startSinglePlayer HERE, we get a race_id AND session_id.
                 currentRaceId.set(startRes.race_id);
+
+                // Store Session so MultiplayerManager connects to WS
+                // Even for single player, we now use WS for sync
+                currentSession.set({
+                    session_id: startRes.session_id,
+                    host_id: $currentUser.id,
+                    players: [
+                        {
+                            id: $currentUser.id,
+                            username: $currentUser.username || "Guest",
+                        },
+                    ],
+                });
             } catch (e) {
                 console.error("Failed to track single player game", e);
             }
@@ -129,7 +142,7 @@
 
         // Seed is managed via config.ts to ensure multiplayer sync
         gameSeed.set(GAME_CONFIG.world.seed);
-        currentSession.set(null); // Ensure no lingering multiplayer session
+        // currentSession.set(null); // REMOVED: We now WANT session for single player
 
         isPlaying.set(true);
         isGameOver.set(false);

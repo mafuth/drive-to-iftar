@@ -124,7 +124,7 @@ export const api = {
             if (!res.ok) throw new Error('Failed to retry game');
             return res.json();
         },
-        async startSinglePlayer(config?: any): Promise<{ status: string, race_id: number, config: any }> {
+        async startSinglePlayer(config?: any): Promise<{ status: string, race_id: number, session_id: string, config: any }> {
             const res = await fetch(`${API_BASE}/game/start/single`, {
                 method: 'POST',
                 headers: {
@@ -156,6 +156,30 @@ export const api = {
                 body: JSON.stringify({ score })
             });
             if (!res.ok) throw new Error('Failed to submit score');
+            return res.json();
+        },
+        async getChallengeStatus(): Promise<{ active: boolean, target: number, collected: number, window: string }> {
+            const res = await fetch(`${API_BASE}/game/challenge/status`, {
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) throw new Error('Failed to get challenge status');
+            return res.json();
+        },
+        async collectDate(count: number = 1): Promise<{ status: string, collected: number }> {
+            const res = await fetch(`${API_BASE}/game/challenge/collect`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
+                body: JSON.stringify({ count })
+            });
+            if (!res.ok) throw new Error('Failed to collect date');
+            return res.json();
+        },
+        async getChallengeLeaderboard(): Promise<{ username: string, dates: number, photo: string | null }[]> {
+            const res = await fetch(`${API_BASE}/game/challenge/leaderboard`);
+            if (!res.ok) throw new Error('Failed to get challenge leaderboard');
             return res.json();
         }
     }

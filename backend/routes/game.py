@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from database import database, models
-from libs import security, websocket_manager
+from libs import security, websocket_manager, daily_challenge
+from libs.settings import settings
 from pydantic import BaseModel
 import random
 import uuid
@@ -24,6 +25,23 @@ async def start_single_player(config: dict = None, current_user: models.User = D
     if not config or not config.get("world"):
        config = await get_game_config()
        
+    # Create Session strictly for 1 player (Private)
+    session = models.MultiplayerSession(
+        host_id=current_user.id,
+        max_players=1,
+        game_seed=str(uuid.uuid4()),
+        status="started" # Immediately started, so no one else can join via "waiting" check
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+
+    # config seed should match session seed
+    config["world"]["seed"] = session.game_seed
+    config["is_multiplayer"] = False # Logic tweak: It IS technically a session, but UI treats as single? 
+                                     # Actually, better to set True so WS logic works, but maybe keep UI clean.
+                                     # Let's keep strict "is_multiplayer": False for UI HUD differences if any.
+
     # Create Race
     race = models.Race(
         name=f"Single Player Race {current_user.username}",
@@ -34,16 +52,22 @@ async def start_single_player(config: dict = None, current_user: models.User = D
     db.commit()
     db.refresh(race)
     
-    # Create Game (Participant)
+    # Create Game (Participant) - Auto-join host
     game = models.Game(
         user_id=current_user.id,
         race_id=race.id,
+        multiplayer_session_id=session.id, # Link to session
         car_index=0
     )
     db.add(game)
     db.commit()
     
-    return {"status": "started", "race_id": race.id, "config": config}
+    return {
+        "status": "started", 
+        "race_id": race.id, 
+        "session_id": str(session.id), # Return session_id for WS connection
+        "config": config
+    }
 
 class CreateLobbyRequest(BaseModel):
     max_players: int = 5
@@ -91,8 +115,14 @@ async def join_lobby(session_id: int, request: JoinLobbyRequest, current_user: m
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
         
+    # Strict checks as requested
     if session.status != "waiting":
          raise HTTPException(status_code=400, detail="Game already started or finished")
+
+    # Count CURRENT players (reliable check)
+    player_count = db.query(models.Game).filter(models.Game.multiplayer_session_id == session.id).count()
+    if player_count >= session.max_players:
+        raise HTTPException(status_code=400, detail="Lobby is full")
 
     # Check if already joined
     game = db.query(models.Game).filter(
@@ -101,11 +131,6 @@ async def join_lobby(session_id: int, request: JoinLobbyRequest, current_user: m
     ).first()
     
     if not game:
-        # Count players
-        player_count = db.query(models.Game).filter(models.Game.multiplayer_session_id == session.id).count()
-        if player_count >= session.max_players:
-            raise HTTPException(status_code=400, detail="Lobby full")
-            
         # Join
         game = models.Game(
             user_id=current_user.id,
@@ -259,16 +284,23 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str, db: Session 
             message["user_id"] = user.id
             await websocket_manager.manager.broadcast(message, session_id, exclude=websocket)
             
+            # Persist 'collect' events
+            if message.get("type") == "collect":
+                amount = message.get("amount", 1)
+                success, msg = daily_challenge.increment_dates(db, user, amount)
+                if not success:
+                    print(f"WS Collect Error for {user.username}: {msg}")
+            
     except WebSocketDisconnect:
         websocket_manager.manager.disconnect(websocket, session_id)
         # Notify others of disconnection
         await websocket_manager.manager.broadcast({"type": "player_disconnected", "id": user.id}, session_id)
 
-from libs.settings import settings
+
 
 @router.get("/leaderboard")
 async def get_leaderboard(db: Session = Depends(database.get_db)):
-    users = db.query(models.User).filter(models.User.is_guest == False).order_by(models.User.score.desc()).limit(settings.LEADERBOARD_LIMIT).all()
+    users = db.query(models.User).order_by(models.User.score.desc()).limit(settings.LEADERBOARD_LIMIT).all()
     return [{"id": u.id, "username": f"{u.username}#{u.id}", "score": u.score, "photo": u.profile_photo} for u in users]
 
 class ScoreSubmission(BaseModel):
@@ -318,3 +350,24 @@ async def submit_score(race_id: int, submission: ScoreSubmission, current_user: 
     db.commit()
     
     return {"status": "success", "new_high_score": current_user.score}
+
+
+
+@router.get("/challenge/status")
+async def get_challenge_status(current_user: models.User = Depends(security.get_current_user)):
+    return daily_challenge.get_status(current_user)
+
+class CollectDateRequest(BaseModel):
+    count: int = 1
+
+@router.post("/challenge/collect")
+async def collect_date(request: CollectDateRequest, current_user: models.User = Depends(security.get_current_user), db: Session = Depends(database.get_db)):
+    success, message = daily_challenge.increment_dates(db, current_user, request.count)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    return {"status": "success", "collected": current_user.dates_collected_today}
+
+@router.get("/challenge/leaderboard")
+async def get_challenge_leaderboard(db: Session = Depends(database.get_db)):
+    return daily_challenge.get_daily_leaderboard(db)
+

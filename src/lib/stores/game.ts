@@ -43,7 +43,20 @@ export const LANE_X_POSITIONS = {
 
 // Watermelons collected
 export const watermelons = writable(0);
+export const dates = writable(0);
 export const collectEvent = writable({ amount: 0, points: 0, timestamp: 0 }); // Used to broadcast collection events
+export const dailyChallenge = writable({
+    active: false,
+    target: 0,
+    collected: 0,
+    window: "05:00 - 18:00"
+});
+
+export const datesConfig = writable({
+    startHour: 1,
+    endHour: 24,
+    target: 10
+});
 
 // Nitro State
 export const nitroActive = writable(false);

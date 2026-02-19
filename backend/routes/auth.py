@@ -15,7 +15,7 @@ class ZitadelLoginRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str | None
-    email: str | None
+    email: str | None = None
     profile_photo: str | None
     score: int
     access_token: str
@@ -25,8 +25,7 @@ class UserResponse(BaseModel):
 def get_user_rank(db: Session, user_id: int, score: int) -> int:
     # Rank is 1 + count of *non-guest* users with strictly higher score
     higher_scores = db.query(models.User).filter(
-        models.User.score > score,
-        models.User.is_guest == False
+        models.User.score > score
     ).count()
     return higher_scores + 1
 
@@ -51,9 +50,8 @@ async def guest_login(db: Session = Depends(database.get_db)):
     
     access_token = security.create_access_token(data={"sub": str(user.id)})
     
-    # Guest rank is roughly based on 0 score, but let's calculate it accurately
-    # rank = get_user_rank(db, user.id, user.score) 
-    # User requested no rank for guests
+    # Calculate rank for guest
+    rank = get_user_rank(db, user.id, user.score)
     
     return {
         "id": user.id,
@@ -63,7 +61,7 @@ async def guest_login(db: Session = Depends(database.get_db)):
         "score": 0,
         "access_token": access_token,
         "is_guest": True,
-        "rank": None
+        "rank": rank
     }
 
 @router.post("/zitadel", response_model=UserResponse)
@@ -201,11 +199,15 @@ async def get_auth_config():
         "client_id": settings.ZITADEL_CLIENT_ID,
     }
 
+from libs import daily_challenge
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: models.User = Depends(security.get_current_user), db: Session = Depends(database.get_db)):
+    # Check for daily challenge penalties
+    daily_challenge.check_and_apply_penalty(db, current_user)
+    
     rank = None
-    if not current_user.is_guest:
-        rank = get_user_rank(db, current_user.id, current_user.score)
+    rank = get_user_rank(db, current_user.id, current_user.score)
         
     return {
             "id": current_user.id,

@@ -4,10 +4,12 @@
     import { currentUser } from "$lib/stores/game";
     import { goto, replaceState } from "$app/navigation";
     import { fade } from "svelte/transition";
+    import DailyLeaderboard from "$lib/components/DailyLeaderboard.svelte";
     import Leaderboard from "$lib/components/Leaderboard.svelte";
     import HowToPlay from "$lib/components/HowToPlay.svelte";
-    import { loadGameConfig } from "$lib/config";
+    import { loadGameConfig, GAME_CONFIG } from "$lib/config";
     import { Logger } from "$lib/utils/logger";
+    import { datesConfig, dailyChallenge } from "$lib/stores/game";
 
     const log = new Logger("Auth");
 
@@ -17,6 +19,26 @@
 
     onMount(async () => {
         await loadGameConfig();
+        // Update reactive store for dates
+        // Update reactive store for dates
+        if (GAME_CONFIG.dates) {
+            log.log("Syncing dates config:", GAME_CONFIG.dates);
+            datesConfig.set({
+                startHour: GAME_CONFIG.dates.startHour ?? 1,
+                endHour: GAME_CONFIG.dates.endHour ?? 24,
+                target: GAME_CONFIG.dates.target ?? 10,
+            });
+        } else {
+            log.error("GAME_CONFIG.dates is missing!");
+        }
+
+        // Fetch Daily Challenge Status
+        try {
+            const status = await api.game.getChallengeStatus();
+            dailyChallenge.set(status);
+        } catch (e) {
+            log.error("Failed to load challenge status", e);
+        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
@@ -96,6 +118,31 @@
     function startNewGame() {
         goto("/start");
     }
+
+    let isFullScreen = false;
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+            isFullScreen = true;
+        } else if (document.exitFullscreen) {
+            document.exitFullscreen();
+            isFullScreen = false;
+        }
+    }
+
+    onMount(() => {
+        const handleFullScreenChange = () => {
+            isFullScreen = !!document.fullscreenElement;
+        };
+        document.addEventListener("fullscreenchange", handleFullScreenChange);
+        return () => {
+            document.removeEventListener(
+                "fullscreenchange",
+                handleFullScreenChange,
+            );
+        };
+    });
 </script>
 
 <div
@@ -103,6 +150,46 @@
 >
     <!-- Background Decor (Optional) -->
     <div class="absolute inset-0 opacity-10 pointer-events-none"></div>
+
+    <!-- Full Screen Toggle -->
+    <!-- Full Screen Toggle -->
+    <button
+        class="fixed top-4 right-4 md:top-6 md:right-6 z-[100] p-3 text-white/50 hover:text-white bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full transition-all border border-white/5"
+        on:click={toggleFullScreen}
+        aria-label="Toggle Fullscreen"
+    >
+        {#if isFullScreen}
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="w-6 h-6 md:w-7 md:h-7"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5M15 15l5.25 5.25"
+                />
+            </svg>
+        {:else}
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="w-6 h-6 md:w-7 md:h-7"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9M20.25 20.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                />
+            </svg>
+        {/if}
+    </button>
 
     {#if loading}
         <div class="text-white/50 animate-pulse text-xl">
@@ -116,14 +203,14 @@
             transition:fade
         >
             <!-- Title -->
-            <div class="text-center">
+            <div class="text-left w-full md:text-center">
                 <h1
                     class="text-4xl md:text-6xl font-black italic tracking-tighter text-white drop-shadow-[0_5px_15px_rgba(0,0,0,0.5)]"
                 >
                     DRIVE TO IFTAR
                 </h1>
                 <div
-                    class="h-1 w-24 bg-amber-400 mx-auto mt-2 rounded-full shadow-[0_0_10px_#fbbf24]"
+                    class="h-1 w-24 bg-amber-400 md:mx-auto mt-2 rounded-full shadow-[0_0_10px_#fbbf24]"
                 ></div>
             </div>
 
@@ -196,17 +283,6 @@
                             <span class="text-amber-400 text-lg">?</span>
                             <span>How To Play</span>
                         </button>
-
-                        {#if $currentUser.is_guest}
-                            <div
-                                class="bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs p-3 rounded-lg flex items-center gap-2"
-                            >
-                                <span class="text-lg">⚠️</span>
-                                <div>
-                                    playing as Guest. Score won't persist.
-                                </div>
-                            </div>
-                        {/if}
                     </div>
 
                     <!-- Actions -->
@@ -230,7 +306,8 @@
                 </div>
 
                 <!-- Right Column: Leaderboard -->
-                <div class="w-full order-2 md:order-1">
+                <div class="w-full order-2 md:order-1 flex flex-col gap-6">
+                    <DailyLeaderboard />
                     <Leaderboard />
                 </div>
             </div>
@@ -274,12 +351,6 @@
                 >
                     Continue as Guest
                 </button>
-                <p
-                    class="text-amber-500/70 text-xs text-center mt-2 px-2 font-mono"
-                >
-                    Your score won't appear on the leaderboard and multiplayer
-                    will not be available in guest player mode.
-                </p>
             </div>
         </div>
     {/if}

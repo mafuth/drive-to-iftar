@@ -12,10 +12,16 @@
         currentSession,
         targetLane,
         assignedLane,
+        dates,
+        dailyChallenge,
+        totalDistance,
+        datesConfig,
     } from "$lib/stores/game";
     import { GAME_CONFIG } from "$lib/config";
     import { createEventDispatcher, onMount, onDestroy } from "svelte";
     import { fly } from "svelte/transition";
+    import { tweened } from "svelte/motion";
+    import { cubicOut } from "svelte/easing";
 
     const dispatch = createEventDispatcher();
 
@@ -30,23 +36,9 @@
         $watermelons / GAME_CONFIG.player.nitro.watermelonThreshold,
     );
 
-    let scoreInterval: any;
-    $: if ($isPlaying && !$isGameOver) {
-        if (!scoreInterval) {
-            scoreInterval = setInterval(() => {
-                score.update(
-                    (s) => s + ($nitroActive ? 2 : 1) * Math.floor(10),
-                ); // Score faster in nitro?
-            }, 1000);
-        }
-    } else {
-        clearInterval(scoreInterval);
-        scoreInterval = null;
-    }
-
-    onDestroy(() => {
-        if (scoreInterval) clearInterval(scoreInterval);
-    });
+    // Score is now handled in RoadManager based on distance traveled
+    const displayedScore = tweened(0, { duration: 100, easing: cubicOut });
+    $: displayedScore.set($score);
 
     // Reactive Lane Number
     $: currentLaneNumber = Math.round(
@@ -77,7 +69,14 @@
             >
                 Points
             </div>
-            <div class="text-2xl font-bold font-mono">{$score}</div>
+            <div class="text-2xl font-bold font-mono">
+                {Math.floor($displayedScore)}
+            </div>
+            <div
+                class="text-xs uppercase tracking-[0.2em] text-black opacity-90 mt-1 font-bold"
+            >
+                {($totalDistance / 1000).toFixed(2)} km
+            </div>
         </div>
 
         {#if $assignedLane !== null}
@@ -107,7 +106,49 @@
                         <div class="text-sm font-bold font-mono text-green-600">
                             {$watermelons}
                         </div>
-                        <div class="text-lg">🍉</div>
+                        <img
+                            src="/kenney_food-kit/Previews/watermelon.png"
+                            alt="Watermelon"
+                            class="w-8 h-8 object-contain drop-shadow-sm"
+                        />
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="h-[1px] bg-black/10 w-full"></div>
+
+                <!-- Dates / Daily Challenge -->
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex flex-col">
+                        <div
+                            class="text-xs uppercase tracking-widest opacity-60"
+                        >
+                            Daily Target
+                        </div>
+                        {#if !$dailyChallenge.active}
+                            <div
+                                class="text-[9px] text-red-400 font-bold uppercase"
+                            >
+                                Closed ({GAME_CONFIG.dates
+                                    .startHour}AM-{GAME_CONFIG.dates.endHour}PM)
+                            </div>
+                        {/if}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="text-sm font-bold font-mono text-amber-700">
+                            {#if $dailyChallenge.active}
+                                {$dailyChallenge.collected}
+                                <span class="text-black/30 mx-0.5">/</span>
+                                {$dailyChallenge.target}
+                            {:else}
+                                -
+                            {/if}
+                        </div>
+                        <img
+                            src="/kenney_food-kit/Previews/coconut.png"
+                            alt="Date"
+                            class="w-8 h-8 object-contain drop-shadow-sm"
+                        />
                     </div>
                 </div>
 
@@ -130,7 +171,11 @@
                                 >
                                     {availableNitros}
                                 </div>
-                                <div class="text-lg">🥤</div>
+                                <img
+                                    src="/kenney_food-kit/Previews/soda.png"
+                                    alt="Nitro"
+                                    class="w-6 h-6 object-contain drop-shadow-sm"
+                                />
                             </div>
                         {/if}
 
@@ -138,9 +183,13 @@
                         <div class="relative w-6 h-8 opacity-80">
                             <!-- Background (Empty) -->
                             <div
-                                class="absolute inset-0 flex items-center justify-center text-2xl grayscale brightness-50 opacity-30"
+                                class="absolute inset-0 flex items-center justify-center grayscale brightness-50 opacity-30"
                             >
-                                🥤
+                                <img
+                                    src="/kenney_food-kit/Previews/soda.png"
+                                    alt="Nitro Empty"
+                                    class="w-6 h-6 object-contain"
+                                />
                             </div>
                             <!-- Fill (Colored revealing from bottom) -->
                             <div
@@ -153,9 +202,13 @@
                                     100}%"
                             >
                                 <div
-                                    class="absolute bottom-0 left-0 right-0 h-8 flex items-center justify-center text-2xl brightness-110"
+                                    class="absolute bottom-0 left-0 right-0 h-8 flex items-center justify-center brightness-110"
                                 >
-                                    🥤
+                                    <img
+                                        src="/kenney_food-kit/Previews/soda.png"
+                                        alt="Nitro Fill"
+                                        class="w-6 h-6 object-contain"
+                                    />
                                 </div>
                             </div>
                         </div>

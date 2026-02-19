@@ -20,7 +20,8 @@ export const ASSETS = {
         p('/kenney_car-kit/Models/GLB format/ambulance.glb')
     ],
     collectibles: {
-        watermelon: p('/kenney_food-kit/Models/GLB format/watermelon.glb')
+        watermelon: p('/kenney_food-kit/Models/GLB format/watermelon.glb'),
+        date: p('/kenney_food-kit/Models/GLB format/avocado.glb')
     },
     zones: {
         city: [

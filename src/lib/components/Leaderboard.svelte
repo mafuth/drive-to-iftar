@@ -20,7 +20,7 @@
 </script>
 
 <div
-    class="bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-6 w-full max-w-md shadow-2xl"
+    class="bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-6 w-full shadow-2xl"
 >
     <h2
         class="text-xl md:text-2xl font-black italic text-white uppercase tracking-wider mb-4 md:mb-6 text-center text-amber-500 drop-shadow-sm"

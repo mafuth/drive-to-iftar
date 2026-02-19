@@ -15,6 +15,9 @@ class User(Base):
     is_guest = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    dates_collected_today = Column(Integer, default=0)
+    last_challenge_date = Column(String, nullable=True)
 
     games = relationship("Game", back_populates="user")
     hosted_sessions = relationship("MultiplayerSession", back_populates="host")

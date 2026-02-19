@@ -111,7 +111,8 @@ export let GAME_CONFIG = {
             tiltNitro: 0.1,
             tiltEnding: -0.15,
             watermelonThreshold: 5
-        }
+        },
+        scoreMultiplier: 0.2
     },
     buildings: {
         offset: 30,
@@ -145,6 +146,19 @@ export let GAME_CONFIG = {
             chance: 0.1
         },
         points: 100
+    },
+    dates: {
+        scale: 3,
+        hitbox: { width: 2, height: 2, depth: 2 },
+        spawnDistance: -250,
+        spawn: {
+            interval: 800,
+            chance: 0.15
+        },
+        points: 50,
+        target: 10,
+        startHour: 1,
+        endHour: 24
     },
     menus: {
         start: {
@@ -197,6 +211,18 @@ export async function loadGameConfig() {
 
         // Careful with arrays and strict types, but Object.assign is lenient at runtime.
         Object.assign(GAME_CONFIG, backendConfig);
+
+        // Update reactive store
+        if (backendConfig.dates) {
+            // breaking circular dependency if I import store here?
+            // config.ts is imported by store/game.ts (lines 4).
+            // importing store/game.ts here will cause cycle.
+            // Solution: update the store in +page.svelte or moves loadGameConfig logic.
+            // Or just use the global window object or a custom event? 
+            // Better: Move loadGameConfig execution logic to a place where we can import the store, 
+            // or just accepts a callback. 
+            // Actually, let's keep it simple: export a function to get the config, and let the caller update the store.
+        }
         log.log("GAME_CONFIG updated from backend", GAME_CONFIG);
     } catch (e) {
         log.error("Failed to load backend config, using defaults", e);

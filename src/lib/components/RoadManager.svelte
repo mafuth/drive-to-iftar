@@ -7,6 +7,8 @@
         isGameOver,
         isPlaying,
         totalDistance,
+        score,
+        nitroActive,
     } from "$lib/stores/game";
     import { GAME_CONFIG } from "$lib/config";
     import { onMount } from "svelte";
@@ -55,6 +57,22 @@
     let buildingModels: any[] = [];
     let decorationModels: any[] = [];
     let time = 0;
+
+    import { api } from "$lib/api";
+    import { dailyChallenge } from "$lib/stores/game";
+
+    // Fetch Daily Challenge Status
+    onMount(async () => {
+        try {
+            const status = await api.game.getChallengeStatus();
+            dailyChallenge.set(status);
+        } catch (e) {
+            console.error("Failed to fetch daily challenge", e);
+        }
+    });
+
+    // Score Accumulation Logic
+    let scoreAccumulator = 0;
 
     // Load Assets
     const gltfRoad = useGltf(ASSETS.road.straight);
@@ -374,6 +392,18 @@
 
         const moveDistance = $speed * delta;
         totalDistance.update((d) => d + moveDistance);
+
+        // Update Score based on distance
+        // Use moveDistance (speed * delta) to naturally scale with speed.
+        // Add explicit bonus for nitro visibility.
+        // @ts-ignore
+        const multiplier = GAME_CONFIG.player.scoreMultiplier || 1;
+        scoreAccumulator += moveDistance * multiplier;
+        if (scoreAccumulator >= 1) {
+            const pointsToAdd = Math.floor(scoreAccumulator);
+            score.update((s) => s + pointsToAdd);
+            scoreAccumulator -= pointsToAdd;
+        }
 
         segments = segments.map((seg) => {
             let newZ = seg.z + moveDistance;

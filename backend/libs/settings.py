@@ -30,8 +30,15 @@ class Settings:
     ]
     
     
+    
     # Game Config
     LEADERBOARD_LIMIT: int = int(os.getenv("LEADERBOARD_LIMIT", 10))
+
+    # Daily Challenge Config
+    DATES_MIN_TARGET: int = int(os.getenv("DATES_MIN_TARGET", 10))
+    DATES_MAX_TARGET: int = int(os.getenv("DATES_MAX_TARGET", 100))
+    DATES_START_HOUR: int = int(os.getenv("DATES_START_HOUR", 1))
+    DATES_END_HOUR: int = int(os.getenv("DATES_END_HOUR", 24))
     
     GAME_CONFIG: dict = {
         "world": {
@@ -144,7 +151,8 @@ class Settings:
                 "tiltNitro": 0.1,
                 "tiltEnding": -0.15,
                 "watermelonThreshold": 5
-            }
+            },
+            "scoreMultiplier": 0.2
         },
         "buildings": {
             "offset": 30,
@@ -178,6 +186,19 @@ class Settings:
                 "chance": 0.1
             },
             "points": 100
+        },
+        "dates": {
+            "scale": 3,
+            "hitbox": {"width": 2, "height": 2, "depth": 2},
+            "spawnDistance": -250,
+            "spawn": {
+                "interval": 800,
+                "chance": 0.15
+            },
+            "points": 50,
+            "target": 10,
+            "startHour": DATES_START_HOUR,
+            "endHour": DATES_END_HOUR
         },
         "menus": {
             "start": {
