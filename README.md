@@ -40,6 +40,14 @@ While Laravel is a robust framework for traditional CRUD applications, I chose *
 2.  **Performance**: Python with FastAPI serves as a high-performance wrapper around Starlette and Pydantic, offering significantly lower latency and resource overhead compared to a full-stack PHP framework when managing rapid game state updates.
 3.  **Unified Async Ecosystem**: By using **Alembic** for migrations and SQLAlchemy (Async) for database interactions, the entire backend operates non-blocking. This ensures that database writes (like saving high scores) never interrupt the game loop or cause lag for other players.
 
+### 🔐 Authentication: Universal Identity with Zitadel
+
+To ensure secure and flexible user management, the project integrates **Zitadel** for authentication.
+
+*   **Plug-and-Play Identity**: Instead of building a custom auth system from scratch, we use standard **OAuth 2.0 / OIDC** flows.
+*   **Freedom of Choice**: This setup allows you to easily plug in your own **Self-Hosted Zitadel instance** for complete data privacy, or connect to external providers like **Google**, **GitHub**, or **Discord** with minimal configuration changes.
+*   **Seamless Integration**: The backend automatically handles token validation and user profile synchronization, whether the user logs in via a corporate SSO or a personal Google account.
+
 ### ⚡ Performance Optimization: Non-Blocking Logger
 
 To ensure zero latency spikes during intense gameplay, the backend utilizes a custom **Queue-Based Logging System**.
