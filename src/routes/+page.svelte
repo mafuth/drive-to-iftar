@@ -274,6 +274,12 @@
                 >
                     Continue as Guest
                 </button>
+                <p
+                    class="text-amber-500/70 text-xs text-center mt-2 px-2 font-mono"
+                >
+                    Your score won't appear on the leaderboard and multiplayer
+                    will not be available in guest player mode.
+                </p>
             </div>
         </div>
     {/if}
