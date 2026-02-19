@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: dash-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    networks:
+      - dash-network
+    # ports:
+    #   - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dash-backend
+    environment:
+      # Auto-construct the URL using the DB service name 'db'
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      ZITADEL_BASE_URL: ${ZITADEL_BASE_URL}
+      ZITADEL_CLIENT_ID: ${ZITADEL_CLIENT_ID}
+      ZITADEL_CLIENT_SECRET: ${ZITADEL_CLIENT_SECRET}
+      ZITADEL_REDIRECT_URI: ${ZITADEL_REDIRECT_URI}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS}
+      LEADERBOARD_LIMIT: ${LEADERBOARD_LIMIT}
+    depends_on:
+      - db
+    networks:
+      - dash-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dash-frontend
+    networks:
+      - dash-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: dash-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8001:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - dash-network
+
+networks:
+  dash-network:
+    driver: bridge
