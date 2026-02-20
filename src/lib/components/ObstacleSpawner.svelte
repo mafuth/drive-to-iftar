@@ -87,12 +87,6 @@
             hornAudio.preload = "auto";
             hornAudio.load();
         }
-
-        console.log("!!! OBSTACLE SPAWNER MOUNTED !!!", {
-            proximityDistance: GAME_CONFIG.obstacles.proximitySoundDistance,
-            isMuted: $isMuted,
-            isTutorial: $isTutorial,
-        });
         obstacles = [];
         lastSpawnDistance = 0;
     });
