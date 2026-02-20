@@ -41,13 +41,20 @@
             const randomTrack =
                 ASSETS.music[Math.floor(Math.random() * ASSETS.music.length)];
             bgMusic = new Audio(randomTrack);
+            bgMusic.preload = "auto";
             bgMusic.loop = true;
             bgMusic.volume = 0.2;
+
+            // Simple fallback for iOS loop issues
+            bgMusic.addEventListener("ended", () => {
+                if (bgMusic && $isPlaying && !$isGameOver) {
+                    bgMusic.currentTime = 0;
+                    bgMusic.play().catch(() => {});
+                }
+            });
+
             bgMusic.play().catch((e) => {
-                log.warn(
-                    "Auto-play blocked, music will start after interaction",
-                    e,
-                );
+                log.warn("Auto-play blocked, waiting for interaction", e);
             });
         }
 
