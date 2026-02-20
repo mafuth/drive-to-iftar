@@ -233,8 +233,8 @@ class Settings:
         },
         "development": {
             "collisionEnabled": True,
-            "devMode": True,
-            "showHitboxes": True
+            "devMode": False,
+            "showHitboxes": False
         }
     }
 

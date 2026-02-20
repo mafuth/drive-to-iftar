@@ -11,7 +11,9 @@
         photo: string | null;
     }[] = [];
     let loading = true;
+    let now = new Date();
     let refreshInterval: any;
+    let countdownInterval: any;
 
     async function loadLeaderboard() {
         try {
@@ -23,13 +25,53 @@
         }
     }
 
+    // Reactive Countdown Logic
+    $: timeRemaining = (() => {
+        // Force dependency on now, dailyChallenge, and datesConfig
+        const currentTime = now;
+        const active = $dailyChallenge.active;
+        const startHour = $datesConfig.startHour || 5;
+        const endHour = $datesConfig.endHour || 18;
+
+        // Maldives Time is UTC + 5
+        const utc =
+            currentTime.getTime() + currentTime.getTimezoneOffset() * 60000;
+        const mvtDate = new Date(utc + 5 * 3600000);
+
+        let targetHour = active ? endHour : startHour;
+
+        const targetDate = new Date(mvtDate.getTime());
+        targetDate.setHours(targetHour, 0, 0, 0);
+
+        let diff = targetDate.getTime() - mvtDate.getTime();
+
+        // Handle target in the past (move to tomorrow)
+        if (diff < 0) {
+            targetDate.setDate(targetDate.getDate() + 1);
+            diff = targetDate.getTime() - mvtDate.getTime();
+        }
+
+        const hours = Math.floor(diff / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+
+        const hText = hours === 1 ? "hour" : "hours";
+        const mText = mins === 1 ? "minute" : "minutes";
+
+        const timeStr = `${hours} ${hText} ${mins} ${mText}`;
+        return active ? `Ends in ${timeStr}` : `Starting in ${timeStr}`;
+    })();
+
     onMount(() => {
         loadLeaderboard();
-        refreshInterval = setInterval(loadLeaderboard, 30000); // Refresh every 30s
+        refreshInterval = setInterval(loadLeaderboard, 30000);
+        countdownInterval = setInterval(() => {
+            now = new Date();
+        }, 60000);
     });
 
     onDestroy(() => {
         if (refreshInterval) clearInterval(refreshInterval);
+        if (countdownInterval) clearInterval(countdownInterval);
     });
 </script>
 
@@ -128,10 +170,6 @@
     <div
         class="text-[10px] text-white/30 text-center uppercase tracking-widest mt-auto pt-2"
     >
-        {#if $dailyChallenge.active}
-            Ends at {$datesConfig.endHour || 18}:00 MVT
-        {:else}
-            Starting at {$datesConfig.startHour || 5}:00 MVT
-        {/if}
+        {timeRemaining}
     </div>
 </div>
