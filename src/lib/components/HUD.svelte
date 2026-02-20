@@ -242,7 +242,7 @@
                     <div
                         class="text-[10px] font-black text-orange-400 tracking-[0.2em] uppercase"
                     >
-                        Nitro Active
+                        Boost Active
                     </div>
                     <!-- Progress Bar -->
                     <div

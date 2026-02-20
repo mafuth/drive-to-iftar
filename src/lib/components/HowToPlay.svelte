@@ -123,7 +123,7 @@
                             </div>
                             <span
                                 class="text-orange-400 text-[10px] uppercase font-bold"
-                                >Nitro Boost</span
+                                >Karaa Boost</span
                             >
                         </div>
                     </div>
@@ -153,7 +153,7 @@
                         <li>
                             Fill the bar to unlock <span
                                 class="text-orange-400 font-bold"
-                                >Nitro Boost 🥤</span
+                                >Karaa Boost 🥤</span
                             >.
                         </li>
                     </ul>

@@ -33,13 +33,13 @@
         },
         {
             title: "Fuel Up with Watermelons",
-            text: "Collect Watermelons to fill your Nitro meter. Collect 5 to unlock a boost!",
+            text: "Collect Watermelons to fill your Karaa drink meter. Collect 5 to unlock a boost!",
             action: "I'll find some!",
         },
         {
-            title: "Nitro Boost!",
+            title: "Karaa Boost!",
             text: "Your meter is full! Press SPACE, DOWN ARROW or SWIPE DOWN to blast through anything!",
-            action: "ACTIVATE NITRO",
+            action: "ACTIVATE KARAA",
         },
         {
             title: "Daily Dates Challenge",
@@ -229,7 +229,7 @@
                     <div
                         class="text-left text-blue-400 font-bold uppercase tracking-wider text-xs md:text-base"
                     >
-                        Press Space to Boost
+                        Take a Karaa Boost
                     </div>
                 </div>
             {:else if $tutorialStep === 4}
