@@ -9,6 +9,7 @@
         gameSeed,
         selectionDirection,
         currentRaceId,
+        isMuted,
     } from "$lib/stores/game";
     import { fade } from "svelte/transition";
 
@@ -120,21 +121,8 @@
 
                 // Let's rely on Race page to fetch config,
                 // BUT we need race_id for score submission.
-                // If we call startSinglePlayer HERE, we get a race_id AND session_id.
+                // If we call startSinglePlayer HERE, we get a race_id.
                 currentRaceId.set(startRes.race_id);
-
-                // Store Session so MultiplayerManager connects to WS
-                // Even for single player, we now use WS for sync
-                currentSession.set({
-                    session_id: startRes.session_id,
-                    host_id: $currentUser.id,
-                    players: [
-                        {
-                            id: $currentUser.id,
-                            username: $currentUser.username || "Guest",
-                        },
-                    ],
-                });
             } catch (e) {
                 console.error("Failed to track single player game", e);
             }
@@ -142,7 +130,7 @@
 
         // Seed is managed via config.ts to ensure multiplayer sync
         gameSeed.set(GAME_CONFIG.world.seed);
-        // currentSession.set(null); // REMOVED: We now WANT session for single player
+        currentSession.set(null); // Ensure no lingering multiplayer session
 
         isPlaying.set(true);
         isGameOver.set(false);
@@ -150,6 +138,13 @@
         // We set isStarting to false after navigation in the store reset logic or here
         // Actually, we should set it false so that if we come back it's not stuck
         isStartingStore.set(false);
+        goto("/race");
+    }
+
+    function startTutorial() {
+        isTutorial.set(true);
+        currentSession.set(null);
+        currentRaceId.set(null);
         goto("/race");
     }
 
@@ -218,6 +213,49 @@
                 class="hidden md:block text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
                 >Dashboard</span
             >
+        </button>
+
+        <!-- Mute Toggle -->
+        <button
+            on:click={() => isMuted.update((m) => !m)}
+            class="absolute right-4 top-4 md:right-8 md:top-8 p-3 text-white/50 hover:text-white transition-all hover:scale-110 active:scale-90 pointer-events-auto z-50 flex items-center gap-2 group"
+            title={$isMuted ? "Unmute" : "Mute"}
+        >
+            <span
+                class="hidden md:block text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
+                >{$isMuted ? "Unmute" : "Mute"}</span
+            >
+            {#if $isMuted}
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2.5"
+                    stroke="currentColor"
+                    class="w-6 h-6 md:w-8 md:h-8 text-red-500"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6L4.5 9h-3V15h3l5.25 3.75V4.5z"
+                    />
+                </svg>
+            {:else}
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2.5"
+                    stroke="currentColor"
+                    class="w-6 h-6 md:w-8 md:h-8"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
+                    />
+                </svg>
+            {/if}
         </button>
 
         <!-- Top Section -->
@@ -329,7 +367,7 @@
                     Single Player
                 </button>
 
-                {#if $currentUser && !$currentUser.is_guest}
+                {#if $currentUser}
                     <button
                         on:click={() => (showMultiplayerMenu = true)}
                         class="group relative w-full md:w-auto px-8 md:px-20 py-3 md:py-4 bg-white/10 hover:bg-white/20 text-white font-black italic text-xl md:text-2xl tracking-tighter uppercase transition-all duration-300 hover:scale-105 active:scale-95 border-2 border-white/20"

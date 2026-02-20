@@ -6,7 +6,6 @@
         lane,
         targetLane,
         assignedLane,
-        LANE_X_POSITIONS,
         isPlaying,
         isGameOver,
         selectedCar,
@@ -93,14 +92,25 @@
     function handleKeydown(e: KeyboardEvent) {
         if ($isGameOver || !$isPlaying) return;
 
-        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        if (
+            e.key === "ArrowLeft" ||
+            e.key === "ArrowRight" ||
+            e.key === "a" ||
+            e.key === "d" ||
+            e.key === "A" ||
+            e.key === "D"
+        ) {
             if ($currentSession && $assignedLane !== null) {
                 moveToMyLane();
             } else {
-                changeLane(e.key === "ArrowLeft" ? -1 : 1);
+                const direction =
+                    e.key === "ArrowLeft" || e.key === "a" || e.key === "A"
+                        ? -1
+                        : 1;
+                changeLane(direction);
             }
         }
-        if (e.key === "ArrowDown") activateNitro();
+        if (e.key === "ArrowDown" || e.key === " ") activateNitro();
     }
 
     let touchStartX = 0;
@@ -238,6 +248,26 @@
                     wireframe
                     transparent
                     opacity={0.5}
+                />
+            </T.Mesh>
+
+            <!-- Sound Hitbox Visualizer (Proximity) -->
+            <T.Mesh
+                position.y={GAME_CONFIG.player.hitbox.height / 2}
+                position.z={-GAME_CONFIG.obstacles.proximitySoundDistance / 2 +
+                    GAME_CONFIG.player.hitbox.depth / 2}
+            >
+                <T.BoxGeometry
+                    args={[
+                        GAME_CONFIG.player.hitbox.width,
+                        GAME_CONFIG.player.hitbox.height,
+                        GAME_CONFIG.obstacles.proximitySoundDistance,
+                    ]}
+                />
+                <T.MeshBasicMaterial
+                    color="#00ffff"
+                    transparent
+                    opacity={0.3}
                 />
             </T.Mesh>
         {/if}

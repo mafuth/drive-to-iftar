@@ -9,7 +9,14 @@
     import HowToPlay from "$lib/components/HowToPlay.svelte";
     import { loadGameConfig, GAME_CONFIG } from "$lib/config";
     import { Logger } from "$lib/utils/logger";
-    import { datesConfig, dailyChallenge } from "$lib/stores/game";
+    import {
+        datesConfig,
+        dailyChallenge,
+        isTutorial,
+        isPlaying,
+        isGameOver,
+        currentSession,
+    } from "$lib/stores/game";
 
     const log = new Logger("Auth");
 
@@ -59,19 +66,34 @@
                 log.log("Dashboard: No active session");
             }
         }
+
+        // Reset game state when on dashboard
+        isPlaying.set(false);
+        isGameOver.set(false);
+        currentSession.set(null);
+
         loading = false;
     });
 
     // Reactive check for tutorial when user loads
     $: if (!loading && $currentUser) {
         const seen = localStorage.getItem("tutorial_seen");
-        isNewPlayer = $currentUser.score === 0;
+        // Relax check: treat null/0/falsy score as new player
+        isNewPlayer = !$currentUser.score || $currentUser.score === 0;
 
-        if (!seen && (isNewPlayer || $currentUser.is_guest)) {
-            // Tiny delay for smooth entrance
-            setTimeout(() => {
-                showTutorial = true;
-            }, 500);
+        log.log("Tutorial Check:", {
+            seen,
+            isNewPlayer,
+            isGuest: $currentUser.is_guest,
+        });
+
+        if (
+            (seen === null || seen === "false") &&
+            (isNewPlayer || $currentUser.is_guest)
+        ) {
+            log.log("Redirecting new user to tutorial...");
+            localStorage.setItem("tutorial_seen", "true");
+            startTutorial();
         }
     }
 
@@ -116,29 +138,57 @@
     }
 
     function startNewGame() {
+        isTutorial.set(false);
         goto("/start");
+    }
+
+    function startTutorial() {
+        isTutorial.set(true);
+        goto("/race");
     }
 
     let isFullScreen = false;
 
     function toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
+        const docEl = document.documentElement as any;
+        const doc = document as any;
+
+        if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+            if (docEl.requestFullscreen) {
+                docEl.requestFullscreen();
+            } else if (docEl.webkitRequestFullscreen) {
+                docEl.webkitRequestFullscreen();
+            }
             isFullScreen = true;
-        } else if (document.exitFullscreen) {
-            document.exitFullscreen();
+        } else {
+            if (doc.exitFullscreen) {
+                doc.exitFullscreen();
+            } else if (doc.webkitExitFullscreen) {
+                doc.webkitExitFullscreen();
+            }
             isFullScreen = false;
         }
     }
 
     onMount(() => {
         const handleFullScreenChange = () => {
-            isFullScreen = !!document.fullscreenElement;
+            const doc = document as any;
+            isFullScreen = !!(
+                doc.fullscreenElement || doc.webkitFullscreenElement
+            );
         };
         document.addEventListener("fullscreenchange", handleFullScreenChange);
+        document.addEventListener(
+            "webkitfullscreenchange",
+            handleFullScreenChange,
+        );
         return () => {
             document.removeEventListener(
                 "fullscreenchange",
+                handleFullScreenChange,
+            );
+            document.removeEventListener(
+                "webkitfullscreenchange",
                 handleFullScreenChange,
             );
         };
@@ -223,8 +273,17 @@
                 >
                     <!-- User Profile Card -->
                     <div
-                        class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-6 flex flex-col gap-4"
+                        class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-6 flex flex-col gap-4 relative group/card"
                     >
+                        <!-- How To Play Button (Circular Top-Right) -->
+                        <button
+                            on:click={() => (showTutorial = true)}
+                            class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-amber-400 border border-white/10 hover:border-amber-400 text-amber-400 hover:text-black flex items-center justify-center transition-all shadow-lg hover:scale-110 active:scale-90 z-10"
+                            title="How To Play"
+                        >
+                            <span class="font-bold text-lg">?</span>
+                        </button>
+
                         <div class="flex items-center gap-4">
                             {#if $currentUser.profile_photo}
                                 <img
@@ -275,13 +334,25 @@
                             </div>
                         </div>
 
-                        <!-- How to Play Button (Prominent) -->
                         <button
-                            on:click={() => (showTutorial = true)}
+                            on:click={startTutorial}
                             class="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl flex items-center justify-center gap-2 text-xs md:text-sm text-white font-bold uppercase tracking-wider transition-all shadow-lg hover:scale-[1.02] active:scale-95"
                         >
-                            <span class="text-amber-400 text-lg">?</span>
-                            <span>How To Play</span>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5 text-amber-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                                />
+                            </svg>
+                            <span>Tutorial</span>
                         </button>
                     </div>
 
@@ -334,9 +405,32 @@
             >
                 <button
                     on:click={handleLogin}
-                    class="w-full py-4 bg-white text-black font-bold uppercase tracking-wider rounded-xl hover:bg-gray-200 transition-all shadow-lg"
+                    class="w-full py-4 bg-white text-black font-bold uppercase tracking-wider rounded-xl hover:bg-gray-200 transition-all shadow-lg flex items-center justify-center gap-3"
                 >
-                    Login
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 48 48"
+                        class="w-6 h-6"
+                    >
+                        <path
+                            fill="#EA4335"
+                            d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                        />
+                        <path
+                            fill="#4285F4"
+                            d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                        />
+                        <path
+                            fill="#FBBC05"
+                            d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                        />
+                        <path
+                            fill="#34A853"
+                            d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                        />
+                        <path fill="none" d="M0 0h48v48H0z" />
+                    </svg>
+                    <span>Continue with Google</span>
                 </button>
 
                 <div class="flex items-center gap-4 opacity-50">

@@ -108,7 +108,7 @@ export const api = {
             if (!res.ok) throw new Error('Failed to join lobby');
             return res.json();
         },
-        async startGame(sessionId: string): Promise<{ status: string, race_id: number }> {
+        async startGame(sessionId: string): Promise<{ status: string, race_id: number, config: any, seed: string, lane_assignments: any }> {
             const res = await fetch(`${API_BASE}/game/lobby/${sessionId}/start`, {
                 method: 'POST',
                 headers: getAuthHeaders()
@@ -116,7 +116,7 @@ export const api = {
             if (!res.ok) throw new Error('Failed to start game');
             return res.json();
         },
-        async retryGame(sessionId: string): Promise<{ status: string, race_id: number }> {
+        async retryGame(sessionId: string): Promise<{ status: string, race_id: number, config: any, seed: string, lane_assignments: any }> {
             const res = await fetch(`${API_BASE}/game/lobby/${sessionId}/retry`, {
                 method: 'POST',
                 headers: getAuthHeaders()
@@ -124,7 +124,7 @@ export const api = {
             if (!res.ok) throw new Error('Failed to retry game');
             return res.json();
         },
-        async startSinglePlayer(config?: any): Promise<{ status: string, race_id: number, session_id: string, config: any }> {
+        async startSinglePlayer(config?: any): Promise<{ status: string, race_id: number, config: any }> {
             const res = await fetch(`${API_BASE}/game/start/single`, {
                 method: 'POST',
                 headers: {

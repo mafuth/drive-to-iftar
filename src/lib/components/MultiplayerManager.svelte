@@ -93,8 +93,9 @@
         if (!session || !user) return;
 
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const host = window.location.host;
         const token = localStorage.getItem("access_token");
-        const wsUrl = `ws://localhost:8000/api/game/ws/${session.session_id}?token=${token}`;
+        const wsUrl = `${protocol}//${host}/api/game/ws/${session.session_id}?token=${token}`;
 
         try {
             socket = new WebSocket(wsUrl);
@@ -111,6 +112,28 @@
 
                 if (data.type === "init") {
                     if (data.seed) gameSeed.set(data.seed);
+                }
+
+                if (data.type === "lobby_update") {
+                    // Sync players in lobby
+                    if (data.players) {
+                        rivals.update((currentRivals) => {
+                            data.players.forEach((p: any) => {
+                                if (p.id !== localUser?.id) {
+                                    if (!currentRivals.has(p.id.toString())) {
+                                        currentRivals.set(p.id.toString(), {
+                                            id: p.id.toString(),
+                                            lane: 0, // Initial, will be updated on game_start
+                                            distance: 0,
+                                            carIndex: 0, // TODO: Sync car index
+                                            lastUpdate: Date.now(),
+                                        });
+                                    }
+                                }
+                            });
+                            return currentRivals;
+                        });
+                    }
                 }
 
                 if (data.type === "game_start") {
@@ -133,6 +156,43 @@
                                 assignedLane.set(myLane);
                             }
                         }
+
+                        // Update Rivals Lanes
+                        if (data.lane_assignments) {
+                            rivals.update((currentRivals) => {
+                                for (const [
+                                    userId,
+                                    laneIndex,
+                                ] of Object.entries(data.lane_assignments)) {
+                                    if (
+                                        localUser &&
+                                        userId !== localUser.id.toString()
+                                    ) {
+                                        // Convert 1-based index to centered 0-based index
+                                        const maxLanes =
+                                            GAME_CONFIG.lanes.maxLanes;
+                                        const centered =
+                                            (laneIndex as number) -
+                                            (maxLanes + 1) / 2;
+
+                                        const rival = currentRivals.get(userId);
+                                        if (rival) {
+                                            rival.lane = centered;
+                                        } else {
+                                            // Create if missing
+                                            currentRivals.set(userId, {
+                                                id: userId,
+                                                lane: centered,
+                                                distance: 0,
+                                                carIndex: 0,
+                                                lastUpdate: Date.now(),
+                                            });
+                                        }
+                                    }
+                                }
+                                return currentRivals;
+                            });
+                        }
                     }
                     if (data.race_id) {
                         currentRaceId.set(data.race_id);
@@ -151,8 +211,14 @@
 
                 if (data.type === "move") {
                     if (localUser && data.user_id !== localUser.id) {
+                        // Shared Control: Remote moves update LOCAL targetLane
                         lastSentTargetLane = data.lane;
                         targetLane.set(data.lane);
+
+                        // Also update distance for consistency if needed,
+                        // but usually distance is driven by local loop.
+                        // We might want to sync distance if one client lags?
+                        // For now, let's trust the shared control input.
                     }
                 }
 

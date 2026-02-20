@@ -61,6 +61,20 @@ To ensure zero latency spikes during intense gameplay, the backend utilizes a cu
 *   **Dockerized**: The entire stack (Frontend, Backend, DB) is containerized for consistent deployment across any environment.
 *   **Nginx Reverse Proxy**: Efficiently routes traffic, handles SSL termination, and manages WebSocket upgrades, offloading connection management from the application servers.
 
+## ✨ Key Features
+
+- **Daily Dates Challenge**: A competitive daily window (5 AM - 6 PM MVT) where players collect Dates to reach unique targets. Failing the target results in a daily score reset!
+- **Multiplayer Mode**: 
+  - **Shared Control**: All players control the same vehicle with synchronized lane assignments.
+  - **Host Retry**: Lobby hosts can instantly restart the session after a crash.
+- **Full Guest Support**: Guest players now have full access to:
+  - Hosting and joining multiplayer sessions.
+  - Competing in both Points and Dates leaderboards.
+  - Progressing through the Daily Challenge.
+- **UI/UX Refinements**:
+  - **Full-Screen Toggle**: Easy access to immersive gameplay.
+  - **Mobile Optimization**: A compact, high-contrast HUD designed for smaller screens.
+
 ## 📦 Deployment
 
 The project includes a `docker-compose.yml` for instant deployment.
@@ -80,6 +94,9 @@ The game will be available at `http://localhost:8001` (or your configured port).
 
 ## 📝 Todo
 
+*   [x] Implementation of Daily Dates Challenge.
+*   [x] Added full-screen toggle.
+*   [x] Added multiplayer retry functionality.
+*   [x] Enabled guest access for all competitive features and multiplayer.
 *   [ ] Fix watermelons spawning inside vehicles.
 *   [ ] Add sound effects and background music.
-*   [ ] Add web vitals analytics.

@@ -30,7 +30,32 @@
         if ($currentSession) {
             try {
                 // Host calls retry endpoint
-                await api.game.retryGame($currentSession.session_id);
+                const res = await api.game.retryGame(
+                    $currentSession.session_id,
+                );
+
+                // Manually apply config in case WS is slow/disconnected
+                if (res.config) {
+                    Object.assign(GAME_CONFIG, res.config);
+                    gameSeed.set(res.seed || GAME_CONFIG.world.seed);
+
+                    // Lane assignments
+                    if (res.lane_assignments && $currentUser) {
+                        const myLane =
+                            res.lane_assignments[$currentUser.id.toString()];
+                        if (myLane !== undefined) {
+                            assignedLane.set(myLane);
+                        }
+
+                        // Initialize rivals here too if needed, but MultiplayerManager does it better via WS.
+                        // However, for the host, we can at least ensure local state is ready.
+                    }
+                }
+                if (res.race_id) {
+                    currentRaceId.set(res.race_id);
+                }
+
+                restart(false);
             } catch (e) {
                 console.error("Retry failed", e);
             }
@@ -52,10 +77,12 @@
         }
     }
 
-    function restart() {
+    function restart(resetLane = true) {
         isGameOver.set(false);
         score.set(0);
-        assignedLane.set(null);
+        if (resetLane) {
+            assignedLane.set(null);
+        }
         isPlaying.set(true); // Ensure playing is true for race page
         goto("/race");
     }

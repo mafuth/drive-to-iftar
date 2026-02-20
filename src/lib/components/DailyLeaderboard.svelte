@@ -72,7 +72,6 @@
         <div
             class="flex-1 flex flex-col items-center justify-center text-white/30 text-sm gap-2"
         >
-            <span class="text-2xl opacity-50">🥥</span>
             <span>No dates collected today yet.</span>
             <span class="text-xs">Be the first!</span>
         </div>
@@ -129,6 +128,10 @@
     <div
         class="text-[10px] text-white/30 text-center uppercase tracking-widest mt-auto pt-2"
     >
-        Ends at {$datesConfig.endHour || 18}:00 Today
+        {#if $dailyChallenge.active}
+            Ends at {$datesConfig.endHour || 18}:00 MVT
+        {:else}
+            Starting at {$datesConfig.startHour || 5}:00 MVT
+        {/if}
     </div>
 </div>

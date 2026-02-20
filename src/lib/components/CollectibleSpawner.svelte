@@ -14,6 +14,8 @@
         totalDistance,
         gameSeed,
         collectEvent,
+        isTutorial,
+        tutorialStep,
     } from "$lib/stores/game";
     import { Logger } from "$lib/utils/logger";
 
@@ -51,6 +53,9 @@
             const spawnDist =
                 Math.floor($totalDistance / COLLECTIBLE_GAP) * COLLECTIBLE_GAP;
             lastSpawnDistance = spawnDist;
+
+            // Tutorial Logic: Only spawn watermelons during step 2 (Fuel Up)
+            if ($isTutorial && $tutorialStep !== 2) return;
 
             const rng = new SeededRNG($gameSeed + "_col_" + spawnDist);
             if (rng.chance(GAME_CONFIG.collectibles.spawn.chance)) {

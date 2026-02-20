@@ -131,6 +131,7 @@ export let GAME_CONFIG = {
         spawnDistance: -250,
         rotation: [0, Math.PI, 0] as [number, number, number],
         hitbox: { width: 4, height: 2, depth: 4 },
+        proximitySoundDistance: 40,
         spawn: {
             initialDelay: 2500,
             minDelay: 1000,
@@ -210,18 +211,19 @@ export async function loadGameConfig() {
         // Deep merge is safer if we get partial updates, but we expect full config.
 
         // Careful with arrays and strict types, but Object.assign is lenient at runtime.
-        Object.assign(GAME_CONFIG, backendConfig);
-
-        // Update reactive store
-        if (backendConfig.dates) {
-            // breaking circular dependency if I import store here?
-            // config.ts is imported by store/game.ts (lines 4).
-            // importing store/game.ts here will cause cycle.
-            // Solution: update the store in +page.svelte or moves loadGameConfig logic.
-            // Or just use the global window object or a custom event? 
-            // Better: Move loadGameConfig execution logic to a place where we can import the store, 
-            // or just accepts a callback. 
-            // Actually, let's keep it simple: export a function to get the config, and let the caller update the store.
+        // Deep-ish merge to preserve local defaults in nested objects
+        const config = GAME_CONFIG as any;
+        const backend = backendConfig as any;
+        for (const key in backend) {
+            if (
+                config[key] &&
+                typeof config[key] === "object" &&
+                !Array.isArray(config[key])
+            ) {
+                Object.assign(config[key], backend[key]);
+            } else {
+                config[key] = backend[key];
+            }
         }
         log.log("GAME_CONFIG updated from backend", GAME_CONFIG);
     } catch (e) {

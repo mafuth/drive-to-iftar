@@ -22,6 +22,7 @@
         gameSeed,
         currentHorizonZone,
         worldModelCount,
+        isTutorial,
     } from "$lib/stores/game";
     import { getZone } from "$lib/utils/game-logic";
 
@@ -386,7 +387,7 @@
         time += delta;
 
         // Progressive Difficulty
-        if ($speed < GAME_CONFIG.player.speed.max) {
+        if ($speed < GAME_CONFIG.player.speed.max && !$isTutorial) {
             speed.update((s) => s + delta * GAME_CONFIG.player.speed.increment);
         }
 
@@ -399,10 +400,13 @@
         // @ts-ignore
         const multiplier = GAME_CONFIG.player.scoreMultiplier || 1;
         scoreAccumulator += moveDistance * multiplier;
-        if (scoreAccumulator >= 1) {
+        if (scoreAccumulator >= 1 && !$isTutorial) {
             const pointsToAdd = Math.floor(scoreAccumulator);
             score.update((s) => s + pointsToAdd);
             scoreAccumulator -= pointsToAdd;
+        } else if (scoreAccumulator >= 1) {
+            // Clear accumulator but don't add to score
+            scoreAccumulator = 0;
         }
 
         segments = segments.map((seg) => {

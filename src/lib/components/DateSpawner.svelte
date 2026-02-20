@@ -8,13 +8,15 @@
         isGameOver,
         lane,
         LANE_X_POSITIONS,
+        targetLane,
+        assignedLane,
         score as gameScore,
-        dates,
         collectibleCount,
         totalDistance,
         gameSeed,
         collectEvent,
         dailyChallenge,
+        isTutorial,
     } from "$lib/stores/game";
     import { Logger } from "$lib/utils/logger";
 
@@ -58,6 +60,7 @@
             const rng = new SeededRNG($gameSeed + "_date_" + spawnDist);
             // @ts-ignore
             if (
+                !$isTutorial &&
                 $dailyChallenge.active &&
                 rng.chance(GAME_CONFIG.dates.spawn.chance)
             ) {
@@ -127,11 +130,14 @@
             ) {
                 // @ts-ignore
                 gameScore.update((s) => s + GAME_CONFIG.dates.points);
-                dates.update((d) => d + 1);
+                dailyChallenge.update((c) => ({
+                    ...c,
+                    collected: c.collected + 1,
+                }));
                 collectedIds.push(c.id);
                 log.log("Collected date!");
 
-                // Broadcast collection in multiplayer (and Single Player now via WS)
+                // Broadcast collection in multiplayer
                 collectEvent.set({
                     amount: 1,
                     // @ts-ignore
@@ -139,12 +145,12 @@
                     timestamp: Date.now(),
                 });
 
-                // Update local HUD immediately (optimistic update)
-                // This updates the $dailyChallenge store which the HUD consumes
-                dailyChallenge.update((c) => ({
-                    ...c,
-                    collected: c.collected + 1,
-                }));
+                // Update Daily Challenge in backend
+                api.game
+                    .collectDate(1)
+                    .catch((err) =>
+                        console.error("Failed to sync date collection", err),
+                    );
             }
         }
 

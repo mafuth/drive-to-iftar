@@ -113,4 +113,37 @@ export const ASSETS = {
             p('/kenney_car-kit/Models/GLB format/sedan.glb') // Tourists?
         ]
     },
+    ui: {
+        watermelon: p('/kenney_food-kit/Previews/watermelon.png'),
+        coconut: p('/kenney_food-kit/Previews/coconut.png'),
+        soda: p('/kenney_food-kit/Previews/soda.png')
+    },
+    music: [
+        p('/music/track_1.mp3'),
+        p('/music/track_2.mp3')
+    ],
+    sounds: {
+        horn: p('/sounds/horn.mp3')
+    }
 };
+
+// Flatten ASSETS for preloading
+export const ALL_ASSETS: string[] = (() => {
+    const urls: string[] = [];
+    const traverse = (obj: any) => {
+        for (const key in obj) {
+            if (typeof obj[key] === 'string') {
+                urls.push(obj[key]);
+            } else if (Array.isArray(obj[key])) {
+                obj[key].forEach((item: any) => {
+                    if (typeof item === 'string') urls.push(item);
+                    else traverse(item);
+                });
+            } else if (typeof obj[key] === 'object') {
+                traverse(obj[key]);
+            }
+        }
+    };
+    traverse(ASSETS);
+    return [...new Set(urls)]; // Deduplicate
+})();

@@ -21,6 +21,7 @@ async def lifespan(app: FastAPI):
     print(f"DEBUG: Start Hour: {daily_challenge.CHALLENGE_START_HOUR}, End Hour: {daily_challenge.CHALLENGE_END_HOUR}")
     
     start_challenge_monitor()
+    print("started challenge monitor")
     yield
     shutdown_logging()
 

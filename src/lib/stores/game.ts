@@ -79,6 +79,18 @@ export const selectionDirection = writable(0);
 // Transition state for starting the game
 export const isStarting = writable(false);
 
+// Tutorial State
+export const isTutorial = writable(false);
+export const tutorialStep = writable(0);
+
+// Audio State
+import { browser } from '$app/environment';
+const initialMute = browser ? localStorage.getItem('game_muted') === 'true' : false;
+export const isMuted = writable(initialMute);
+if (browser) {
+    isMuted.subscribe(v => localStorage.setItem('game_muted', v.toString()));
+}
+
 // Multiplayer / Sync Stores
 import type { User, Lobby } from '../api';
 export const currentUser = writable<User | null>(null);

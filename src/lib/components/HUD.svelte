@@ -12,7 +12,6 @@
         currentSession,
         targetLane,
         assignedLane,
-        dates,
         dailyChallenge,
         totalDistance,
         datesConfig,
@@ -56,24 +55,24 @@
 </script>
 
 <div
-    class="pointer-events-none absolute inset-0 p-6 flex flex-col justify-between z-10"
+    class="pointer-events-none absolute inset-0 p-2 md:p-6 flex flex-col justify-between z-10"
 >
     <!-- Top Bar -->
     <div class="flex justify-between items-start">
         <!-- Score -->
         <div
-            class="flex flex-col items-center bg-white/20 backdrop-blur-md p-3 rounded-lg border border-black/10 min-w-24 text-black shadow-lg"
+            class="flex flex-col items-center bg-white/20 backdrop-blur-xl p-2 md:p-3 rounded-2xl border border-white/20 min-w-16 md:min-w-24 text-black shadow-lg"
         >
             <div
-                class="text-[10px] uppercase tracking-[0.2em] opacity-40 mb-1 font-bold"
+                class="text-[10px] uppercase tracking-[0.2em] opacity-40 mb-1 font-bold hidden md:block"
             >
                 Points
             </div>
-            <div class="text-2xl font-bold font-mono">
+            <div class="text-lg md:text-2xl font-bold font-mono">
                 {Math.floor($displayedScore)}
             </div>
             <div
-                class="text-xs uppercase tracking-[0.2em] text-black opacity-90 mt-1 font-bold"
+                class="text-[10px] md:text-xs uppercase tracking-[0.2em] text-black opacity-90 mt-0.5 md:mt-1 font-bold"
             >
                 {($totalDistance / 1000).toFixed(2)} km
             </div>
@@ -81,47 +80,57 @@
 
         {#if $assignedLane !== null}
             <div
-                class="flex flex-col items-center bg-amber-500/80 backdrop-blur-md p-3 rounded-lg border border-amber-400/50 min-w-24 ml-4 text-black"
+                class="flex flex-col items-center bg-amber-500/80 backdrop-blur-xl p-2 md:p-3 rounded-2xl border border-amber-400/50 min-w-16 md:min-w-24 ml-2 md:ml-4 text-black shadow-lg"
             >
                 <div
-                    class="text-[10px] uppercase tracking-[0.2em] opacity-80 mb-1 font-bold"
+                    class="text-[10px] uppercase tracking-[0.2em] opacity-80 mb-1 font-bold hidden md:block"
                 >
                     Assigned Lane
                 </div>
-                <div class="text-2xl font-black font-mono">{$assignedLane}</div>
+                <div class="text-xl md:text-2xl font-black font-mono">
+                    {$assignedLane}
+                </div>
             </div>
         {/if}
 
         <!-- Power-ups Card -->
         <div class="flex flex-col items-end gap-2">
             <div
-                class="backdrop-blur-md bg-white/20 border border-black/10 shadow-lg rounded-xl p-3 text-black flex flex-col gap-3 min-w-[100px]"
+                class="backdrop-blur-xl bg-white/20 border border-white/20 shadow-lg rounded-2xl p-2 md:p-3 text-black flex flex-col gap-1.5 md:gap-3 min-w-0 md:min-w-[100px]"
             >
                 <!-- Watermelons -->
-                <div class="flex items-center justify-between gap-3">
-                    <div class="text-xs uppercase tracking-widest opacity-60">
+                <div
+                    class="flex items-center justify-end md:justify-between gap-2 md:gap-3"
+                >
+                    <div
+                        class="text-xs uppercase tracking-widest opacity-60 hidden md:block"
+                    >
                         Watermelons
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="text-sm font-bold font-mono text-green-600">
+                    <div class="flex items-center gap-1 md:gap-2">
+                        <div
+                            class="text-xs md:text-sm font-bold font-mono text-green-600"
+                        >
                             {$watermelons}
                         </div>
                         <img
                             src="/kenney_food-kit/Previews/watermelon.png"
                             alt="Watermelon"
-                            class="w-8 h-8 object-contain drop-shadow-sm"
+                            class="w-6 h-6 md:w-8 md:h-8 object-contain drop-shadow-sm"
                         />
                     </div>
                 </div>
 
                 <!-- Divider -->
-                <div class="h-[1px] bg-black/10 w-full"></div>
+                <div class="h-[1px] bg-black/10 w-full hidden md:block"></div>
 
                 <!-- Dates / Daily Challenge -->
-                <div class="flex items-center justify-between gap-3">
+                <div
+                    class="flex items-center justify-end md:justify-between gap-2 md:gap-3"
+                >
                     <div class="flex flex-col">
                         <div
-                            class="text-xs uppercase tracking-widest opacity-60"
+                            class="text-xs uppercase tracking-widest opacity-60 hidden md:block"
                         >
                             Daily Target
                         </div>
@@ -134,12 +143,14 @@
                             </div>
                         {/if}
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="text-sm font-bold font-mono text-amber-700">
+                    <div class="flex items-center gap-1 md:gap-2">
+                        <div
+                            class="text-xs md:text-sm font-bold font-mono text-amber-700"
+                        >
                             {#if $dailyChallenge.active}
-                                {$dailyChallenge.collected}
-                                <span class="text-black/30 mx-0.5">/</span>
-                                {$dailyChallenge.target}
+                                {$dailyChallenge.collected}<span
+                                    class="text-black/30 mx-0.5">/</span
+                                >{$dailyChallenge.target}
                             {:else}
                                 -
                             {/if}
@@ -147,40 +158,47 @@
                         <img
                             src="/kenney_food-kit/Previews/coconut.png"
                             alt="Date"
-                            class="w-8 h-8 object-contain drop-shadow-sm"
+                            class="w-6 h-6 md:w-8 md:h-8 object-contain drop-shadow-sm"
                         />
                     </div>
                 </div>
 
                 <!-- Divider -->
-                <div class="h-[1px] bg-black/10 w-full"></div>
+                <div class="h-[1px] bg-black/10 w-full hidden md:block"></div>
 
                 <!-- Nitro -->
-                <div class="flex items-center justify-between gap-3">
-                    <div class="text-xs uppercase tracking-widest opacity-60">
+                <div
+                    class="flex items-center justify-end md:justify-between gap-2 md:gap-3"
+                >
+                    <div
+                        class="text-xs uppercase tracking-widest opacity-60 hidden md:block"
+                    >
                         Boost
                     </div>
-                    <div class="flex items-center gap-3">
-                        {#if availableNitros > 0}
-                            <div
-                                class="flex items-center gap-1.5"
-                                transition:fly={{ x: 10 }}
-                            >
+                    <div class="flex items-center gap-1.5 md:gap-3">
+                        <div class="flex items-center gap-1">
+                            {#if availableNitros > 0}
                                 <div
-                                    class="text-sm font-bold font-mono text-pink-600"
+                                    class="text-xs md:text-sm font-bold font-mono text-pink-600"
                                 >
                                     {availableNitros}
                                 </div>
-                                <img
-                                    src="/kenney_food-kit/Previews/soda.png"
-                                    alt="Nitro"
-                                    class="w-6 h-6 object-contain drop-shadow-sm"
-                                />
-                            </div>
-                        {/if}
+                            {:else}
+                                <div
+                                    class="text-xs md:text-sm font-bold font-mono text-black/20 md:hidden"
+                                >
+                                    0
+                                </div>
+                            {/if}
+                            <img
+                                src="/kenney_food-kit/Previews/soda.png"
+                                alt="Nitro"
+                                class="w-5 h-5 md:w-6 md:h-6 object-contain drop-shadow-sm"
+                            />
+                        </div>
 
                         <!-- Progress Icon -->
-                        <div class="relative w-6 h-8 opacity-80">
+                        <div class="relative w-5 h-7 md:w-6 md:h-8 opacity-90">
                             <!-- Background (Empty) -->
                             <div
                                 class="absolute inset-0 flex items-center justify-center grayscale brightness-50 opacity-30"
@@ -188,7 +206,7 @@
                                 <img
                                     src="/kenney_food-kit/Previews/soda.png"
                                     alt="Nitro Empty"
-                                    class="w-6 h-6 object-contain"
+                                    class="w-full h-full object-contain"
                                 />
                             </div>
                             <!-- Fill (Colored revealing from bottom) -->
@@ -202,12 +220,12 @@
                                     100}%"
                             >
                                 <div
-                                    class="absolute bottom-0 left-0 right-0 h-8 flex items-center justify-center brightness-110"
+                                    class="absolute bottom-0 left-0 right-0 h-7 md:h-8 flex items-center justify-center brightness-110"
                                 >
                                     <img
                                         src="/kenney_food-kit/Previews/soda.png"
                                         alt="Nitro Fill"
-                                        class="w-6 h-6 object-contain"
+                                        class="w-full h-full object-contain"
                                     />
                                 </div>
                             </div>

@@ -170,9 +170,10 @@ async def _start_session_game(session: models.MultiplayerSession, db: Session):
     config["world"]["seed"] = session.game_seed
     config["is_multiplayer"] = True
     
-    # Scale lanes to player count, but keep at least the default for variety
+    # Scale lanes to player count
     num_players = len(session.games)
-    max_lanes = max(settings.GAME_CONFIG["lanes"]["maxLanes"], num_players)
+    # Strict matching: 2 players -> 2 lanes. 3 players -> 3 lanes.
+    max_lanes = max(1, num_players) # Ensure at least 1 lane
     config["lanes"]["maxLanes"] = max_lanes
     
     # Randomize lanes (1-based index) for all players
@@ -215,7 +216,13 @@ async def _start_session_game(session: models.MultiplayerSession, db: Session):
         "lane_assignments": lane_map
     }, str(session.id))
     
-    return race.id
+    return {
+        "status": "started",
+        "race_id": race.id,
+        "config": config,
+        "seed": session.game_seed,
+        "lane_assignments": lane_map
+    }
 
 @router.post("/lobby/{session_id}/start")
 async def start_game(session_id: int, current_user: models.User = Depends(security.get_current_user), db: Session = Depends(database.get_db)):
@@ -226,8 +233,7 @@ async def start_game(session_id: int, current_user: models.User = Depends(securi
     if session.host_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only host can start game")
         
-    race_id = await _start_session_game(session, db)
-    return {"status": "started", "race_id": race_id}
+    return await _start_session_game(session, db)
 
 @router.post("/lobby/{session_id}/retry")
 async def retry_lobby(session_id: int, current_user: models.User = Depends(security.get_current_user), db: Session = Depends(database.get_db)):
@@ -238,8 +244,11 @@ async def retry_lobby(session_id: int, current_user: models.User = Depends(secur
     if session.host_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only host can retry game")
         
-    race_id = await _start_session_game(session, db)
-    return {"status": "started", "race_id": race_id}
+    result = await _start_session_game(session, db)
+    # _start_session_game returns ONLY race_id. We need more data.
+    # We need to refactor _start_session_game to return the data or fetch it here.
+    # Refactoring _start_session_game is better.
+    return result
 
 @router.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str, db: Session = Depends(database.get_db)):
@@ -300,7 +309,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str, db: Session 
 
 @router.get("/leaderboard")
 async def get_leaderboard(db: Session = Depends(database.get_db)):
-    users = db.query(models.User).order_by(models.User.score.desc()).limit(settings.LEADERBOARD_LIMIT).all()
+    users = db.query(models.User).filter(models.User.score > 0).order_by(models.User.score.desc()).limit(settings.LEADERBOARD_LIMIT).all()
     return [{"id": u.id, "username": f"{u.username}#{u.id}", "score": u.score, "photo": u.profile_photo} for u in users]
 
 class ScoreSubmission(BaseModel):

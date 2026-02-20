@@ -1,6 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher, onMount } from "svelte";
     import { fade, scale } from "svelte/transition";
+    import { datesConfig } from "$lib/stores/game";
 
     export let show = false;
     export let isNewPlayer = false;
@@ -75,49 +76,53 @@
                                 >Mobile</span
                             >
                             <div
-                                class="flex items-center gap-2 text-white font-mono text-sm"
+                                class="flex items-center gap-2 text-white font-black text-sm"
                             >
-                                <span>👈 Swipe 👉</span>
+                                <span>LANE: 👈 👉 SWIPE</span>
                             </div>
-                            <span class="text-white text-sm">Change Lanes</span>
-
                             <div
-                                class="flex items-center gap-2 text-white font-mono text-sm mt-2"
+                                class="flex items-center gap-2 text-orange-400 font-black text-sm mt-1"
                             >
-                                <span>👇 Swipe Down</span>
+                                <span>BOOST: 👇 SWIPE DOWN</span>
                             </div>
-                            <span class="text-orange-400 text-sm font-bold"
-                                >Nitro Boost</span
-                            >
                         </div>
                         <div class="flex flex-col items-center gap-2">
                             <span class="text-white/50 text-xs uppercase"
                                 >Desktop</span
                             >
                             <div
-                                class="flex items-center gap-2 text-white font-mono text-sm"
+                                class="flex items-center gap-2 text-white font-mono text-[10px]"
                             >
                                 <span
-                                    class="border border-white/20 px-2 py-1 rounded"
-                                    >←</span
+                                    class="border border-white/20 px-1.5 py-0.5 rounded"
+                                    >← →</span
                                 >
                                 <span>or</span>
                                 <span
-                                    class="border border-white/20 px-2 py-1 rounded"
-                                    >→</span
+                                    class="border border-white/20 px-1.5 py-0.5 rounded"
+                                    >A D</span
                                 >
                             </div>
-                            <span class="text-white text-sm">Arrow Keys</span>
+                            <span
+                                class="text-white text-[10px] uppercase font-bold text-center"
+                                >Lane Switch</span
+                            >
 
                             <div
-                                class="flex items-center gap-2 text-white font-mono text-sm mt-2"
+                                class="flex items-center gap-2 text-white font-mono text-[10px] mt-1"
                             >
                                 <span
-                                    class="border border-white/20 px-2 py-1 rounded"
+                                    class="border border-white/20 px-1.5 py-0.5 rounded text-[8px]"
+                                    >SPACE</span
+                                >
+                                <span>or</span>
+                                <span
+                                    class="border border-white/20 px-1.5 py-0.5 rounded"
                                     >↓</span
                                 >
                             </div>
-                            <span class="text-orange-400 text-sm font-bold"
+                            <span
+                                class="text-orange-400 text-[10px] uppercase font-bold"
                                 >Nitro Boost</span
                             >
                         </div>
@@ -141,6 +146,11 @@
                             > for points & boost.
                         </li>
                         <li>
+                            Collect <span class="text-amber-500 font-bold"
+                                >Dates 🥥</span
+                            > for the Daily Challenge.
+                        </li>
+                        <li>
                             Fill the bar to unlock <span
                                 class="text-orange-400 font-bold"
                                 >Nitro Boost 🥤</span
@@ -149,7 +159,7 @@
                     </ul>
                 </div>
 
-                <!-- Multiplayer -->
+                <!-- Multiplayer Mode -->
                 <div
                     class="bg-amber-500/10 p-4 rounded-xl border border-amber-500/20"
                 >
@@ -157,10 +167,6 @@
                         class="text-amber-400 font-bold uppercase tracking-wider mb-2 text-sm flex items-center gap-2"
                     >
                         <span>Multiplayer Mode</span>
-                        <span
-                            class="text-[10px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-black"
-                            >NEW</span
-                        >
                     </h3>
                     <ul class="text-white/90 text-sm space-y-2">
                         <li class="flex items-start gap-2">
@@ -174,7 +180,7 @@
                             <span class="text-amber-400 mt-1">•</span>
                             <span
                                 ><strong>Assigned Lanes:</strong> You are assigned
-                                a unique lane (see HUD).</span
+                                a unique lane (starting from 1 on the far left).</span
                             >
                         </li>
                         <li class="flex items-start gap-2">
@@ -189,6 +195,51 @@
                             <span
                                 ><strong>Host Retry:</strong> Only the session host
                                 can restart the race after a crash.</span
+                            >
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Daily Dates Challenge -->
+                <div
+                    class="bg-green-500/10 p-4 rounded-xl border border-green-500/20"
+                >
+                    <h3
+                        class="text-green-400 font-bold uppercase tracking-wider mb-2 text-sm flex items-center gap-2"
+                    >
+                        <span>Daily Dates Challenge</span>
+                        <span
+                            class="text-[10px] bg-green-500 text-black px-1.5 py-0.5 rounded-full font-black"
+                            >LIVE</span
+                        >
+                    </h3>
+                    <ul class="text-white/90 text-sm space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-400 mt-1">•</span>
+                            <span
+                                ><strong>Collection Window:</strong> Every day
+                                from
+                                <strong
+                                    >{$datesConfig.startHour || 5}:00 AM to
+                                    {$datesConfig.endHour > 12
+                                        ? $datesConfig.endHour - 12
+                                        : $datesConfig.endHour || 6}:00 PM MVT</strong
+                                >.</span
+                            >
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-400 mt-1">•</span>
+                            <span
+                                ><strong>Daily Target:</strong> Reach your unique
+                                target to secure your place.</span
+                            >
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-400 mt-1">•</span>
+                            <span
+                                ><strong>Leaderboard:</strong> Only players who "break
+                                their fast" by completing the Daily Date Challenge
+                                get to show off their high scores on the daily rankings!</span
                             >
                         </li>
                     </ul>

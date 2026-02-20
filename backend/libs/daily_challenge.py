@@ -79,10 +79,25 @@ def check_and_apply_penalty(db: Session, user: models.User):
         return
 
     # If user played on check_date, did they meet the target?
+    # If user played on check_date, did they meet the target?
     if user.last_challenge_date == check_date:
-        target = get_daily_target(check_date, user.score)
-        if user.dates_collected_today < target:
-            reset_score(db, user)
+        today_str = now.strftime("%Y-%m-%d")
+        
+        # Only check if data is reliable:
+        # 1. Checking TODAY (Window closed evening check) -> Data intact.
+        # 2. Checking YESTERDAY but dates > 0 -> Server missed midnight wipe, data intact.
+        # If Checking YESTERDAY and dates == 0 -> Assume Midnight Wipe handled it. Skip.
+        
+        should_check = False
+        if check_date == today_str:
+            should_check = True
+        elif user.dates_collected_today > 0:
+            should_check = True
+            
+        if should_check:
+            target = get_daily_target(check_date, user.score)
+            if user.dates_collected_today < target:
+                reset_score(db, user)
 
 def reset_score(db: Session, user: models.User):
     if user.score > 0:
@@ -109,7 +124,29 @@ def increment_dates(db: Session, user: models.User, count: int = 1):
 
 def reset_daily_collection(db: Session):
     """Resets dates_collected_today to 0 for ALL users. Called at midnight."""
-    print("Background Monitor: Resetting daily dates collection for all users...")
+    print("Background Monitor: Running daily reset and penalty check...")
+    
+    # 1. Identify "Yesterday" (The day that just ended)
+    # 1 second ago it was yesterday.
+    now_mvt = datetime.utcnow() + timedelta(hours=5)
+    yesterday_str = (now_mvt - timedelta(days=1)).strftime("%Y-%m-%d")
+    
+    # 2. Check players who played yesterday but failed
+    # We only care about users whose last_challenge_date WAS yesterday.
+    # If it was older, they are handled by "missed day" logic on login.
+    users_played_yesterday = db.query(models.User).filter(
+        models.User.last_challenge_date == yesterday_str
+    ).all()
+
+    for user in users_played_yesterday:
+        target = get_daily_target(yesterday_str, user.score)
+        if user.dates_collected_today < target:
+             print(f"Midnight Check: {user.username} failed challenge ({user.dates_collected_today}/{target}). Resetting score.")
+             user.score = 0
+    
+    db.commit()
+
+    # 3. Wipe daily collection for EVERYONE
     db.query(models.User).update({models.User.dates_collected_today: 0})
     db.commit()
 
@@ -141,7 +178,7 @@ def get_status(user: models.User):
         "window": f"{CHALLENGE_START_HOUR:02d}:00 - {CHALLENGE_END_HOUR:02d}:00"
     }
 
-def get_daily_leaderboard(db: Session, limit: int = 10):
+def get_daily_leaderboard(db: Session, limit: int = 3):
     today = get_today_challenge_date()
     if not today:
         # If window is closed, show leaderboard for TODAY (results so far)

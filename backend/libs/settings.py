@@ -171,6 +171,7 @@ class Settings:
             "spawnDistance": -250,
             "rotation": [0, 3.14159, 0],
             "hitbox": {"width": 4, "height": 2, "depth": 4},
+            "proximitySoundDistance": 6,
             "spawn": {
                 "initialDelay": 2500,
                 "minDelay": 1000,
@@ -232,8 +233,8 @@ class Settings:
         },
         "development": {
             "collisionEnabled": True,
-            "devMode": False,
-            "showHitboxes": False
+            "devMode": True,
+            "showHitboxes": True
         }
     }
 

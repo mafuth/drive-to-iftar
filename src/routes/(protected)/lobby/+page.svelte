@@ -5,6 +5,7 @@
         currentUser,
         currentSession,
         lane,
+        assignedLane,
         gameSeed,
         currentRaceId,
     } from "$lib/stores/game";
@@ -36,7 +37,8 @@
         // Connect to WebSocket
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const token = localStorage.getItem("access_token");
-        const wsUrl = `${protocol}//${window.location.hostname}:8000/api/game/ws/${$currentSession.session_id}?token=${token}`; // Adjust port if needed
+        const host = window.location.host;
+        const wsUrl = `${protocol}//${host}/api/game/ws/${$currentSession.session_id}?token=${token}`;
 
         // Note: In dev, Vite proxies /api, but WS might need explicit port or proxy setup.
         // If vite.config.ts proxies ws, fine. If not, might need port 8000.
@@ -88,6 +90,16 @@
                     const initIndex = GAME_CONFIG.player.initialLane;
                     const centered = initIndex - (maxLanes + 1) / 2;
                     lane.set(centered, { duration: 0 });
+                    lane.set(centered, { duration: 0 });
+
+                    // Capture Assigned Lane (Redundancy for Client)
+                    if (data.lane_assignments && $currentUser) {
+                        const myLane =
+                            data.lane_assignments[$currentUser.id.toString()];
+                        if (myLane !== undefined) {
+                            assignedLane.set(myLane);
+                        }
+                    }
                 }
 
                 if (data.seed) {
@@ -127,8 +139,36 @@
     async function startGame() {
         if (!isHost) return;
         try {
-            await api.game.startGame($currentSession!.session_id);
+            const res = await api.game.startGame($currentSession!.session_id);
+
+            // Manually apply config/state for Host (Robustness)
+            if (res.config) {
+                Object.assign(GAME_CONFIG, res.config);
+                gameSeed.set(res.seed || GAME_CONFIG.world.seed);
+
+                // Lane assignments
+                if (res.lane_assignments && $currentUser) {
+                    const myLane =
+                        res.lane_assignments[$currentUser.id.toString()];
+                    if (myLane !== undefined) {
+                        assignedLane.set(myLane);
+                    }
+                }
+
+                // Reset Lane Position
+                const maxLanes = GAME_CONFIG.lanes.maxLanes;
+                const initIndex = GAME_CONFIG.player.initialLane;
+                const centered = initIndex - (maxLanes + 1) / 2;
+                lane.set(centered, { duration: 0 });
+            }
+
+            if (res.race_id) {
+                currentRaceId.set(res.race_id);
+            }
+
+            goto("/race");
         } catch (e) {
+            console.error("Start game failed", e);
             error = "Failed to start game";
         }
     }

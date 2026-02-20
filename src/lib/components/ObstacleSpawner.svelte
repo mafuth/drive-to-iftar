@@ -14,11 +14,14 @@
         currentHorizonZone,
         gameSeed,
         obstacleCount,
+        isTutorial,
+        isMuted,
     } from "$lib/stores/game";
     import { Logger } from "$lib/utils/logger";
     const log = new Logger("Obstacles");
     import { GAME_CONFIG } from "$lib/config";
     import { onMount } from "svelte";
+    import { browser } from "$app/environment";
     import { derived } from "svelte/store";
     import { SeededRNG } from "$lib/utils/rng";
     import { applyWorldCurvature } from "$lib/utils/worldBending";
@@ -32,6 +35,7 @@
         zone: string; // Add zone to type
         speedOffset: number; // Some vary in speed?
         speed: number;
+        playedSound: boolean;
     };
 
     let obstacles: Obstacle[] = [];
@@ -73,14 +77,27 @@
     let lastSpawnDistance = 0;
     const SPAWN_GAP = 30; // Spawn every 30m
 
-    // Reset logic
-    $: if ($isPlaying) {
-        if (obstacles.length === 0 && lastSpawnDistance !== 0) {
-            // New game start
-            lastSpawnDistance = 0;
-            obstacles = [];
+    let hornAudio: HTMLAudioElement | null = null;
+
+    // Reset logic: ensure clean state on mount or when game restarts
+    onMount(() => {
+        // Preload horn audio for low-latency playback
+        if (browser && ASSETS.sounds.horn) {
+            hornAudio = new Audio(ASSETS.sounds.horn);
+            hornAudio.preload = "auto";
+            hornAudio.load();
         }
-    } else {
+
+        console.log("!!! OBSTACLE SPAWNER MOUNTED !!!", {
+            proximityDistance: GAME_CONFIG.obstacles.proximitySoundDistance,
+            isMuted: $isMuted,
+            isTutorial: $isTutorial,
+        });
+        obstacles = [];
+        lastSpawnDistance = 0;
+    });
+
+    $: if (!$isPlaying) {
         obstacles = [];
         lastSpawnDistance = 0;
     }
@@ -95,7 +112,11 @@
             const spawnDist =
                 Math.floor($totalDistance / SPAWN_GAP) * SPAWN_GAP;
             lastSpawnDistance = spawnDist;
-            spawnObstacle(spawnDist);
+
+            // Re-enforce tutorial check here to avoid even calling the function
+            if (!$isTutorial) {
+                spawnObstacle(spawnDist);
+            }
         }
 
         // Move Obstacles
@@ -117,8 +138,38 @@
         const moveDist = $speed * delta;
         // const playerSpeed = $speed; // Player speed
 
+        const playerZ = -2; // Matches Player.svelte visual position
+        const currentLane = $lane; // Use floating point lane or round?
+
         obstacles = obstacles.map((obs) => {
-            return { ...obs, z: obs.z + moveDist };
+            let playedSound = obs.playedSound;
+
+            // Trigger proximity sound (horn) using Sound Hitbox approach
+            const soundBoxDepth = GAME_CONFIG.obstacles.proximitySoundDistance;
+            const soundBoxZStart = playerZ;
+            const soundBoxZEnd = playerZ - soundBoxDepth;
+
+            const obsDepth = GAME_CONFIG.obstacles.hitbox.depth;
+            const obsZStart = obs.z + obsDepth / 2;
+            const obsZEnd = obs.z - obsDepth / 2;
+
+            if (
+                !playedSound &&
+                Math.abs(obs.lane - currentLane) < 0.6 &&
+                obsZStart > soundBoxZEnd &&
+                obsZEnd < soundBoxZStart
+            ) {
+                if (hornAudio) {
+                    // Reset and play for zero latency
+                    hornAudio.currentTime = 0;
+                    hornAudio.volume = 1.0;
+                    hornAudio.play().catch((e) => {
+                        log.error("Horn audio failed to play:", e);
+                    });
+                }
+                playedSound = true;
+            }
+            return { ...obs, z: obs.z + moveDist, playedSound };
         });
 
         // Remove passed obstacles
@@ -147,7 +198,7 @@
     }
 
     function spawnObstacle(distance: number) {
-        if ($isGameOver) return; // Don't spawn during fall
+        if ($isGameOver || $isTutorial) return; // Don't spawn during fall or tutorial
         const zone = $currentHorizonZone;
         const availableModels =
             trafficModels[zone] && trafficModels[zone].length > 0
@@ -179,15 +230,8 @@
             // Storing the zone is easiest.
             zone: zone, // Add zone property to Obstacle type
             speedOffset: 0,
-            speed: 20 + rng.range(0, 10), // Random speed between 20-30 (Player starts at 15 -> 50)
-            // If player is at 50, relative speed is 20-30 towards camera.
-            // If player is at 15, relative speed is negative? (Cars move away?)
-            // If cars move away, they never reach player.
-            // We should ensure they are slower than player OR spawn behind?
-            // "Make them move slowly".
-            // If player speed is initial (15), cars at 20 will move Away.
-            // Let's cap car speed at player speed - 5?
-            // Or just make them slow (e.g. 10).
+            speed: 10, // Fixed slow speed for now
+            playedSound: false,
         });
 
         // Force Svelte update
@@ -195,7 +239,7 @@
     }
 
     function checkCollision() {
-        if (!$isPlaying || $isGameOver) return; // No collision in menu or game over
+        if (!$isPlaying || $isGameOver || $isTutorial) return; // No collision in menu, game over, or tutorial
         const playerZ = -2; // Matches Player.svelte visual position
         const collisionThreshold =
             (GAME_CONFIG.obstacles.hitbox.depth +
