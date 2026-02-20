@@ -155,6 +155,7 @@
 
             if (
                 !playedSound &&
+                !$nitroActive &&
                 Math.abs(obs.lane - currentLane) < 0.6 &&
                 obsZStart > soundBoxZEnd &&
                 obsZEnd < soundBoxZStart
